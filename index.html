@@ -29,11 +29,11 @@
     .hint{margin-top:8px;color:rgba(255,255,255,.45);font-size:12px;line-height:1.5}
 
     /* QR modal */
-    #qrModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65);z-index:999999;}
-    #qrCard{width:min(92vw,540px);background:#111;border:2px solid #333;border-radius:16px;padding:12px;}
+    #qrModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.60);z-index:999999;}
+    #qrCard{width:min(760px,94vw);background:rgba(20,28,45,.98);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;}
     #qrHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     #qrClose{padding:10px 12px;border-radius:12px;min-width:auto}
-    #qrVideo{width:100%;height:60vh;background:#000;border-radius:12px;}
+    #qrVideo{width:100%;height:60vh;border-radius:14px;background:#000;}
     #qrMsg{margin-top:8px;color:var(--mut);font-weight:900}
   </style>
 </head>
@@ -103,7 +103,7 @@
 
           <div class="status" id="status">待機中</div>
           <div class="hint">
-            使い方：1) QRスキャン → 2) 入室 or 物販追加 → 3) 退室＆精算（合計表示）→ AirPayに合計入力
+            使い方：1) QRスキャン → 2) 入室 or 物販追加 → 3) 退室＆精算（合計表示） → AirPayに合計を入力して支払い
           </div>
         </div>
 
@@ -114,10 +114,8 @@
             <div>日上限：<span id="pCap">-</span>円</div>
             <div>月額：<span id="pMonthly">-</span>円</div>
           </div>
-          <div class="hint" style="margin-top:10px">
-            ※ カメラがPermissionで落ちる時は「https」配下で開いてるか確認（GitHub PagesならOK）
-          </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -134,107 +132,69 @@
     </div>
   </div>
 
+  <!-- jsQR fallback -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-  <script>
-    /**************
-     * 設定（ここだけあなたの環境に合わせて）
-     **************/
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
-    const TOKEN = "MIKOSHIYA_CHANGE_ME_2026"; // GAS CONFIG.TOKEN と揃える
 
-    /**************
-     * DOM
-     **************/
-    const qs = s => document.querySelector(s);
+  <script>
+    // ★ここだけ差し替え
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
+    const TOKEN = "MIKOSHIYA_2026";
+
     const el = {
-      today: qs("#today"),
-      dot: qs("#dot"),
-      stateText: qs("#stateText"),
-      idText: qs("#idText"),
-      mins: qs("#mins"),
-      stayYen: qs("#stayYen"),
-      merchYen: qs("#merchYen"),
-      merchCount: qs("#merchCount"),
-      settleStay: qs("#settleStay"),
-      settleMerch: qs("#settleMerch"),
-      settleTotal: qs("#settleTotal"),
-      status: qs("#status"),
-      pUnitMin: qs("#pUnitMin"),
-      pUnitYen: qs("#pUnitYen"),
-      pCap: qs("#pCap"),
-      pMonthly: qs("#pMonthly"),
-      btnScan: qs("#btnScan"),
-      btnEnter: qs("#btnEnter"),
-      btnSettle: qs("#btnSettle"),
-      productSel: qs("#productSel"),
-      qty: qs("#qty"),
-      btnAdd: qs("#btnAdd"),
-      qrModal: qs("#qrModal"),
-      qrClose: qs("#qrClose"),
-      qrVideo: qs("#qrVideo"),
-      qrMsg: qs("#qrMsg"),
+      today: q("#today"),
+      dot: q("#dot"),
+      stateText: q("#stateText"),
+      idText: q("#idText"),
+      mins: q("#mins"),
+      stayYen: q("#stayYen"),
+      merchYen: q("#merchYen"),
+      merchCount: q("#merchCount"),
+      settleStay: q("#settleStay"),
+      settleMerch: q("#settleMerch"),
+      settleTotal: q("#settleTotal"),
+      status: q("#status"),
+      pUnitMin: q("#pUnitMin"),
+      pUnitYen: q("#pUnitYen"),
+      pCap: q("#pCap"),
+      pMonthly: q("#pMonthly"),
+      btnScan: q("#btnScan"),
+      btnEnter: q("#btnEnter"),
+      btnSettle: q("#btnSettle"),
+      productSel: q("#productSel"),
+      qty: q("#qty"),
+      btnAdd: q("#btnAdd"),
+      qrModal: q("#qrModal"),
+      qrClose: q("#qrClose"),
+      qrVideo: q("#qrVideo"),
+      qrMsg: q("#qrMsg"),
     };
 
-    let memberId = "";
-
+    function q(s){ return document.querySelector(s); }
     function setStatus(msg, bad=false){
       el.status.textContent = msg;
       el.status.classList.toggle("bad", !!bad);
-    }
-    function setId(id){
-      memberId = String(id||"").trim().toUpperCase();
-      el.idText.textContent = memberId || "-";
     }
     function fmtYen(n){
       const x = Number(n||0);
       return isFinite(x) ? String(Math.floor(x)) : "0";
     }
 
-    /**************
-     * JSONP API（CORS回避）
-     **************/
-    function api(fn, params={}){
-      return new Promise((resolve, reject)=>{
-        const cb = "cb_" + Math.random().toString(36).slice(2);
-        const q = new URLSearchParams({
-          token: TOKEN,
-          fn,
-          callback: cb,
-          ...params,
-        });
+    let memberId = "";
 
-        const url = GAS_EXEC_URL + "?" + q.toString();
-        const script = document.createElement("script");
-        script.src = url;
-
-        const timeout = setTimeout(()=>{
-          cleanup();
-          reject(new Error("API timeout"));
-        }, 15000);
-
-        window[cb] = (data)=>{
-          cleanup();
-          resolve(data);
-        };
-
-        script.onerror = ()=>{
-          cleanup();
-          reject(new Error("API load error"));
-        };
-
-        function cleanup(){
-          clearTimeout(timeout);
-          try{ delete window[cb]; }catch(e){ window[cb] = undefined; }
-          if (script && script.parentNode) script.parentNode.removeChild(script);
-        }
-
-        document.body.appendChild(script);
-      });
+    function setId(id){
+      memberId = String(id||"").trim().toUpperCase();
+      el.idText.textContent = memberId || "-";
     }
 
-    /**************
-     * Load / Refresh
-     **************/
+    async function api(fn, params = {}) {
+      const u = new URL(GAS_EXEC_URL);
+      u.searchParams.set("token", TOKEN);
+      u.searchParams.set("fn", fn);
+      for (const [k,v] of Object.entries(params)) u.searchParams.set(k, String(v));
+      const res = await fetch(u.toString(), { method: "GET", cache: "no-store" });
+      return await res.json();
+    }
+
     async function loadInitial(){
       const init = await api("getInitial");
       if (init && init.ok){
@@ -260,7 +220,7 @@
       }
       for (const p of items){
         const opt = document.createElement("option");
-        opt.value = p.product_id;
+        opt.value = p.sku;
         opt.textContent = `${p.name}（${p.price_yen}円）`;
         el.productSel.appendChild(opt);
       }
@@ -294,43 +254,44 @@
       el.dot.classList.toggle("on", !!st.is_inside);
       el.stateText.textContent = st.is_inside ? "入室中" : "退室中";
 
-      el.mins.textContent = (st.minutes == null ? "-" : st.minutes);
+      el.mins.textContent = (st.minutes ?? "-");
       el.stayYen.textContent = fmtYen(st.stay_yen);
 
       el.merchYen.textContent = fmtYen(st.pending_merch_yen);
-      el.merchCount.textContent = (st.pending_merch_count == null ? "-" : st.pending_merch_count);
+      el.merchCount.textContent = (st.pending_merch_count ?? "-");
 
       el.settleStay.textContent = fmtYen(st.stay_yen);
       el.settleMerch.textContent = fmtYen(st.pending_merch_yen);
-      el.settleTotal.textContent = fmtYen(Number(st.stay_yen||0) + Number(st.pending_merch_yen||0));
+      el.settleTotal.textContent = fmtYen((Number(st.stay_yen||0) + Number(st.pending_merch_yen||0)));
 
       el.btnEnter.disabled = !!st.is_inside;
       el.btnSettle.disabled = !st.is_inside;
       el.btnAdd.disabled = false;
     }
 
-    /**************
-     * Camera / QR
-     **************/
+    // --- Camera / QR ---
     let camStream = null;
     let scanning = false;
 
-    function openModal(){ el.qrModal.style.display="flex"; }
-    function closeModal(){ el.qrModal.style.display="none"; stopCamera(); scanning=false; }
-
+    function openModal(){ el.qrModal.style.display = "flex"; }
     function stopCamera(){
+      scanning = false;
       if (camStream){
         camStream.getTracks().forEach(t=>t.stop());
         camStream = null;
       }
       el.qrVideo.srcObject = null;
     }
+    function closeModal(){
+      el.qrModal.style.display = "none";
+      stopCamera();
+    }
 
     async function startCamera(){
       const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
       const constraints = isMobile
-        ? { video: { facingMode: { ideal: "environment" } }, audio: false }
-        : { video: true, audio: false };
+        ? { video: { facingMode: { ideal: "environment" } }, audio:false }
+        : { video: true, audio:false };
 
       camStream = await navigator.mediaDevices.getUserMedia(constraints);
       el.qrVideo.srcObject = camStream;
@@ -341,6 +302,7 @@
 
     async function scanLoop(){
       if (!scanning) return;
+
       try{
         // BarcodeDetector 優先
         if ("BarcodeDetector" in window){
@@ -365,7 +327,8 @@
             return;
           }
         }
-      }catch(e){}
+      }catch(e){ /* ignore */ }
+
       requestAnimationFrame(scanLoop);
     }
 
@@ -381,9 +344,6 @@
       }, 250);
     }
 
-    /**************
-     * UI events
-     **************/
     el.btnScan.addEventListener("click", async ()=>{
       setStatus("カメラ起動中…");
       el.qrMsg.textContent = "カメラを起動しています…";
@@ -401,6 +361,7 @@
     });
     el.qrClose.addEventListener("click", closeModal);
 
+    // --- Actions ---
     el.btnEnter.addEventListener("click", async ()=>{
       if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
       setStatus("入室処理中…");
@@ -415,13 +376,13 @@
 
     el.btnAdd.addEventListener("click", async ()=>{
       if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-      const productId = String(el.productSel.value||"");
+      const sku = String(el.productSel.value||"");
       const qty = Number(el.qty.value||1);
-      if (!productId) return setStatus("商品を選んでね", true);
+      if (!sku) return setStatus("商品を選んでね", true);
 
       setStatus("物販追加中…");
       try{
-        const r = await api("addMerch", { member_id: memberId, product_id: productId, qty: String(qty) });
+        const r = await api("addMerch", { member_id: memberId, sku, qty });
         setStatus(r && r.message ? r.message : "追加しました", !(r && r.ok));
         await refresh();
       }catch(e){
@@ -431,9 +392,9 @@
 
     el.btnSettle.addEventListener("click", async ()=>{
       if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-      setStatus("退室＆精算中…");
+      setStatus("退室&精算中…");
       try{
-        const r = await api("settleAndExit", { member_id: memberId, method: "AirPay" });
+        const r = await api("settleAndExit", { member_id: memberId, method: "AirPay", note: "" });
         if (!r || !r.ok){
           setStatus(r && r.message ? r.message : "失敗", true);
           return;
@@ -453,10 +414,7 @@
       }
     });
 
-    /**************
-     * init
-     **************/
-    (async ()=>{
+    (async function boot(){
       try{
         setStatus("初期化中…");
         await loadInitial();
