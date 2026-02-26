@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>MIKOSHIYA QR Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{
+  background:#111;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+  padding:30px;
+}
+video{
+  width:90%;
+  max-width:600px;
+  background:black;
+  border-radius:10px;
+}
+button{
+  margin-top:20px;
+  padding:12px 24px;
+  font-size:16px;
+  border:none;
+  border-radius:6px;
+  background:#8b1c2d;
+  color:white;
+}
+</style>
+</head>
+<body>
+
+<h2>MIKOSHIYA カメラテスト</h2>
+
+<video id="video" autoplay playsinline muted></video>
+<br>
+<button onclick="startCamera()">カメラ起動</button>
+
+<script>
+async function startCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:true,
+      audio:false
+    });
+    document.getElementById("video").srcObject = stream;
+  }catch(e){
+    alert("エラー: " + e.name + " / " + e.message);
+  }
+}
+</script>
+
+</body>
+</html>
