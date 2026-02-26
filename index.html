@@ -1,22 +1,33 @@
-<script>
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec?fn=getInitial&token=MIKOSHIYA_CHANGE_ME_2026&callback=cb_test";
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MIKOSHIYA 接続テスト</title>
+</head>
+<body>
+  <h1>MIKOSHIYA 接続テスト</h1>
+  <div id="result">接続中...</div>
 
-async function testConnection() {
-  try {
-    const res = await fetch(
-      GAS_URL + "?fn=getInitial&token=MIKOSHIYA_CHANGE_ME_2026"
-    );
+  <script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdm..." // ここは今のURLそのまま
 
-    const data = await res.json();
+    async function testConnection() {
+      try {
+        const res = await fetch(
+          GAS_URL + "?fn=getInitial&token=MIKOSHIYA_CHANGE_ME_2026"
+        );
+        const data = await res.json();
 
-    document.getElementById("result").innerText =
-      data.status === "ok" ? "接続成功" : "接続失敗";
+        document.getElementById("result").innerText =
+          data.status === "ok" ? "接続成功" : "接続失敗";
+      } catch (err) {
+        document.getElementById("result").innerText = "接続失敗";
+        console.error(err);
+      }
+    }
 
-  } catch (err) {
-    document.getElementById("result").innerText = "接続失敗";
-    console.error(err);
-  }
-}
-
-testConnection();
-</script>
+    testConnection();
+  </script>
+</body>
+</html>
