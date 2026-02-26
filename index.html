@@ -1,54 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>MIKOSHIYA Reception Test</title>
-</head>
-<body>
-  <h1>MIKOSHIYA 接続テスト</h1>
-  <div id="result">接続確認中...</div>
-
 <script>
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
-const API_TOKEN = "MIKOSHIYA_CHANGE_ME_2026";
-
-function api(fn, params = {}) {
-  return new Promise((resolve, reject) => {
-    const callbackName = "cb_" + Date.now();
-
-    window[callbackName] = function (data) {
-      delete window[callbackName];
-      script.remove();
-      resolve(data);
-    };
-
-    const query = new URLSearchParams({
-      callback: callbackName,
-      fn,
-      token: API_TOKEN,
-      ...params
-    });
-
-    const script = document.createElement("script");
-    script.src = GAS_URL + "?" + query.toString();
-    script.onerror = reject;
-    document.body.appendChild(script);
-  });
-}
+const GAS_URL = "ここに最新のexec URL";
 
 async function testConnection() {
   try {
-    const res = await api("getInitial");
-    document.getElementById("result").innerText = "接続成功！";
-    console.log("GAS接続成功:", res);
+    const res = await fetch(
+      GAS_URL + "?fn=getInitial&token=MIKOSHIYA_CHANGE_ME_2026"
+    );
+
+    const data = await res.json();
+
+    document.getElementById("result").innerText =
+      data.status === "ok" ? "接続成功" : "接続失敗";
+
   } catch (err) {
     document.getElementById("result").innerText = "接続失敗";
-    console.error("GAS接続失敗:", err);
+    console.error(err);
   }
 }
 
 testConnection();
 </script>
-
-</body>
-</html>
