@@ -1,44 +1,42 @@
-/** ===== JSONP API入口 ===== */
-const API_TOKEN = "MIKOSHIYA_CHANGE_ME_2026"; // 好きな長い文字列に変更
+<script>
+/* ===== GAS 接続設定 ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
+const API_TOKEN = "MIKOSHIYA_CHANGE_ME_2026";
 
-function doGet(e) {
-  const p = (e && e.parameter) ? e.parameter : {};
-  const cb = p.callback || "cb";
-  const fn = p.fn || "";
-  const token = p.token || "";
+/* ===== JSONP 通信 ===== */
+function api(fn, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName = "cb_" + Date.now();
 
-  let res;
+    window[callbackName] = function (data) {
+      delete window[callbackName];
+      script.remove();
+      resolve(data);
+    };
+
+    const query = new URLSearchParams({
+      callback: callbackName,
+      fn,
+      token: API_TOKEN,
+      ...params
+    });
+
+    const script = document.createElement("script");
+    script.src = GAS_URL + "?" + query.toString();
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+}
+
+/* ===== 動作確認 ===== */
+async function testConnection() {
   try {
-    if (token !== API_TOKEN) throw new Error("Invalid token");
-
-    switch (fn) {
-      case "getInitial":
-        res = getInitial();
-        break;
-      case "getProducts":
-        res = getProducts();
-        break;
-      case "getMemberStatus":
-        res = getMemberStatus(p.memberId || "");
-        break;
-      case "enter":
-        res = enter(p.memberId || "");
-        break;
-      case "addMerch":
-        res = addMerch(p.memberId || "", p.sku || "", Number(p.qty || 1));
-        break;
-      case "settleAndExit":
-        res = settleAndExit(p.memberId || "", p.source || "AirPay");
-        break;
-      default:
-        res = { ok: false, message: "Unknown fn: " + fn };
-    }
+    const res = await api("getInitial");
+    console.log("GAS接続成功:", res);
   } catch (err) {
-    res = { ok: false, message: String(err && err.message ? err.message : err) };
+    console.error("GAS接続失敗:", err);
   }
+}
 
-  const out = `${cb}(${JSON.stringify(res)})`;
-  return ContentService
-    .createTextOutput(out)
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
-} 
+testConnection();
+</script>
