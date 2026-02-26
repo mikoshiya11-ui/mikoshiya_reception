@@ -3,8 +3,66 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MIKOSHIYA 入退室 + 物販（まとめて精算）</title>
+  <title>MIKOSHIYA OS-Reception</title>
   <style>
+    /* ===== iPad/Tablet polish ===== */
+:root{
+  --radius: 18px;
+  --card-bg: rgba(255,255,255,.06);
+  --card-bd: rgba(255,255,255,.10);
+  --text-dim: rgba(255,255,255,.72);
+}
+
+body{
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* コンテンツ幅を締めてセンターに */
+.container, main, .wrap, .app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* カードの統一感 */
+.card, .panel, .box {
+  background: var(--card-bg);
+  border: 1px solid var(--card-bd);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+}
+
+/* 数字をカッコよく（合計とか） */
+.big-number{
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.small-label{
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* ボタンを揃える */
+button, .btn{
+  height: 52px;
+  border-radius: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  box-shadow: 0 10px 24px rgba(0,0,0,.25);
+  transition: transform .06s ease, filter .12s ease;
+}
+button:active, .btn:active{
+  transform: translateY(1px);
+  filter: brightness(.95);
+}
+
+/* iPadで余白をちょい増やす */
+@media (min-width: 768px){
+  .grid, .row { gap: 16px; }
+  h1, .title { font-size: 34px; }
+}
     :root{--bg:#0b1220;--card:rgba(255,255,255,.06);--bd:rgba(255,255,255,.10);--tx:#e8eefc;--mut:#aab6d3;--ok:#28d17c;--bad:#ff4d6d;}
     body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:var(--bg);color:var(--tx);}
     .wrap{max-width:980px;margin:0 auto;padding:22px 16px 36px;}
