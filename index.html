@@ -519,9 +519,12 @@ button.warn{
 
     async function startCamera(){
       const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      const constraints = isMobile
-        ? { video: { facingMode: { ideal: "environment" } }, audio:false }
-        : { video: true, audio:false };
+      const constraints = {
+  video: {
+    facingMode: { exact: "environment" }
+  },
+  audio: false
+};
 
       camStream = await navigator.mediaDevices.getUserMedia(constraints);
       el.qrVideo.srcObject = camStream;
