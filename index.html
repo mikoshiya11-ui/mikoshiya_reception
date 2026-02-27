@@ -220,8 +220,24 @@ button.warn{
 @media (max-width:480px){
   .btnRow{ grid-template-columns: 1fr; }
 }
+/* ===== TOTAL AREA ===== */
+.totalBox{
+  text-align:center;
+  padding:20px;
+}
 
-  </style>
+.totalLabel{
+  font-size:14px;
+  color:var(--mut);
+  margin-bottom:6px;
+}
+
+.totalAmount{
+  font-size:42px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -259,7 +275,7 @@ button.warn{
             <button class="warn" id="btnSettle">退室＆精算（AirPay）</button>
           </div>
 
-          <div class="row" style="margin-top:12px">
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:14px;">
             <div class="box" style="flex:1">
               <div class="mut">未精算 物販</div>
               <div style="margin-top:6px;font-weight:1000">
@@ -267,12 +283,26 @@ button.warn{
                 <div>件数：<span id="merchCount">-</span></div>
               </div>
             </div>
-            <div class="box" style="flex:1">
-              <div class="mut">精算 合計（表示）</div>
-              <div style="margin-top:6px;font-weight:1000">
-                <div>滞在：<span id="settleStay">-</span> 円</div>
-                <div>物販：<span id="settleMerch">-</span> 円</div>
-                <div style="font-size:20px">合計：<span id="settleTotal">-</span> 円</div>
+            <div class="box totalBox" style="flex:1">
+
+  <div class="totalLabel">合計（税込）</div>
+
+  <div class="totalAmount">
+    <span id="settleTotal">0</span> 円
+  </div>
+
+  <div style="margin-top:10px;font-size:13px;color:var(--mut)">
+    滞在：<span id="settleStay">0</span> 円<br>
+    物販：<span id="settleMerch">0</span> 円
+  </div>
+
+</div>
+  </div>
+
+  <div style="margin-top:10px;font-size:13px;color:var(--mut)">
+    滞在：<span id="settleStay">0</span> 円<br>
+    物販：<span id="settleMerch">0</span> 円
+  </div>
               </div>
             </div>
           </div>
