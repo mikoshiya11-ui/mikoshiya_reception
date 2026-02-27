@@ -595,17 +595,28 @@ button.warn{
     el.qrClose.addEventListener("click", closeModal);
 
     // --- Actions ---
-    el.btnEnter.addEventListener("click", async ()=>{
-      if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-      setStatus("入室処理中…");
-      try{
-        const r = await api("enter", { member_id: memberId, source: "kiosk" });
-        setStatus(r && r.message ? r.message : "完了", !(r && r.ok));
-        await refresh();
-      }catch(e){
-        setStatus("通信エラー: " + (e && e.message ? e.message : e), true);
-      }
-    });
+    el.btnEnter.addEventListener("click", async () => {
+
+  if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
+
+  // ★ 追加：連打防止
+  if (el.btnEnter.disabled) return;
+  el.btnEnter.disabled = true;
+
+  setStatus("入室処理中...");
+
+  try {
+    const r = await api("enter", { member_id: memberId, source: "kiosk" });
+    setStatus(r && r.message ? r.message : "完了", !(r && r.ok));
+    await refresh();
+  } catch (e) {
+    setStatus("通信エラー: " + (e && e.message ? e.message : e), true);
+  } finally {
+    // ★ 通信終わったら復活
+    el.btnEnter.disabled = false;
+  }
+
+});
 
     el.btnAdd.addEventListener("click", async ()=>{
       if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
