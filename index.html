@@ -618,24 +618,36 @@ button.warn{
 
 });
 
-    el.btnAdd.addEventListener("click", async ()=>{
-      if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-      const sku = String(el.productSel.value||"");
-      const qty = Number(el.qty.value||1);
-      if (!sku) return setStatus("商品を選んでね", true);
+    el.btnAdd.addEventListener("click", async () => {
+  if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
 
-      setStatus("物販追加中…");
-      try{
-        const r = await api("addMerch", { member_id: memberId, sku, qty });
-        setStatus(r && r.message ? r.message : "追加しました", !(r && r.ok));
-        await refresh();
-      }catch(e){
-        setStatus("通信エラー: " + (e && e.message ? e.message : e), true);
-      }
-    });
+  // ★連打防止
+  if (el.btnAdd.disabled) return;
+  el.btnAdd.disabled = true;
 
-    let settling = false;
+  try {
+    const sku = String(el.productSel.value || "");
+    const qty = Number(el.qty.value || 1);
+    if (!sku) return setStatus("商品を選んでね", true);
 
+    setStatus("物販追加中…");
+
+    const r = await api("addMerch", { member_id: memberId, sku, qty });
+    if (!r || !r.ok) {
+      setStatus((r && r.message) ? r.message : "失敗", true);
+      return;
+    }
+
+    setStatus(r.message || "追加しました");
+    await refresh();
+  } catch (e) {
+    setStatus("通信エラー: " + (e && e.message ? e.message : e), true);
+  } finally {
+    // ★必ず戻す（returnが途中にあってもOK）
+    el.btnAdd.disabled = false;
+  }
+});
+    
 el.btnSettle.addEventListener("click", async () => {
   if (settling) return;              // 連打無視
   if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
