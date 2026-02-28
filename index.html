@@ -634,29 +634,37 @@ button.warn{
       }
     });
 
-    el.btnSettle.addEventListener("click", async ()=>{
-      if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-      setStatus("退室&精算中…");
-      try{
-        const r = await api("settleAndExit", { member_id: memberId, method: "AirPay", note: "" });
-        if (!r || !r.ok){
-          setStatus(r && r.message ? r.message : "失敗", true);
-          return;
-        }
-        el.settleStay.textContent = fmtYen(r.stay_yen);
-        el.settleMerch.textContent = fmtYen(r.merch_yen);
-        el.settleTotal.textContent = fmtYen(r.total_yen);
+    let settling = false;
 
-        setStatus(
-          `${r.message}\n`+
-          `滞在: ${r.stay_yen}円 / 物販: ${r.merch_yen}円\n`+
-          `合計: ${r.total_yen}円（AirPayに入力）`
-        );
-        await refresh();
-      }catch(e){
-        setStatus("通信エラー: " + (e && e.message ? e.message : e), true);
-      }
+el.btnSettle.addEventListener("click", async () => {
+  if (settling) return;              // 連打無視
+  if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
+
+  settling = true;
+  el.btnSettle.disabled = true;
+  el.btnSettle.style.opacity = "0.7";
+
+  setStatus("退室＆精算中…");
+
+  try {
+    const r = await api("settleAndExit", {
+      member_id: memberId,
+      method: "AirPay",
+      note: ""
     });
+    setStatus(r && r.message ? r.message : "完了", !(r && r.ok));
+    await refresh();
+  } catch (e) {
+    setStatus("通信エラー: " + (e?.message || e), true);
+  } finally {
+    // ちょい待ってから戻す（連打癖対策）
+    setTimeout(() => {
+      settling = false;
+      el.btnSettle.disabled = false;
+      el.btnSettle.style.opacity = "";
+    }, 800);
+  }
+});
 
     (async function boot(){
       try{
