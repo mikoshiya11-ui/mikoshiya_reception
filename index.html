@@ -177,21 +177,20 @@
       refresh(); // 追加後に合計金額を更新
     });
 　　
-    // --- ここが抜けています！これを差し込んでください ---
+    // 🛍️ 消えていた物販ボタンを復活！
     el.btnAdd.addEventListener("click", async () => {
       if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
       setStatus("物販を追加中...");
       const r = await api("addMerch", { member_id: memberId, sku: el.productSel.value, qty: el.qty.value });
       setStatus(r.message, !r.ok);
-      refresh(); 
+      refresh(); // これで画面下の合計金額がパッと増える！
     });
-    // ----------------------------------------------
-    
+
     (async function init(){
       setStatus("初期化通信中...");
       const res = await api("getInitial");
       if(res.ok) { el.today.textContent = res.today; setStatus("待機中"); }
-      else { setStatus("GASとの接続に失敗しました。", true); }
+      else { setStatus("GASへの接続失敗", true); }
       
       const p = await api("getProducts");
       if(p.ok) p.items.forEach(i => {
