@@ -12,20 +12,23 @@
     }
     body{ margin:0; font-family:sans-serif; background:var(--bg); color:var(--tx); line-height:1.5; }
     .wrap{ padding:16px; display:flex; flex-direction:column; gap:12px; }
-    .card{ background:var(--card-bg); border:1px solid var(--card-bd); border-radius:var(--radius); padding:16px; backdrop-filter: blur(10px); }
+    .card{ background:var(--card-bg); border:1px solid var(--card-bd); border-radius:var(--radius); padding:16px; backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
     h1{ margin:0; font-size:20px; font-weight:900; }
     .box{ background:rgba(0,0,0,0.3); border-radius:14px; padding:12px; margin-top:8px; }
     .row{ display:flex; gap:8px; align-items:center; justify-content:space-between; }
     button{ 
       width:100%; min-height:62px; border-radius:12px; border:none; 
       font-size:18px; font-weight:900; cursor:pointer; margin-top:8px;
+      transition: transform 0.1s, opacity 0.1s;
     }
+    button:active{ transform: scale(0.98); opacity: 0.8; }
+    button:disabled{ opacity: 0.2; cursor: not-allowed; }
     .primary{ background:var(--ok); color:#062012; }
     .warn{ background:#cfa7ff; color:#220a35; }
     #btnScan{ background:rgba(255,255,255,0.1); color:var(--tx); border:1px solid var(--card-bd); }
     .big-id{ font-size:32px; font-weight:900; letter-spacing:1px; margin:4px 0; }
     .total-display{ font-size:42px; font-weight:900; text-align:center; color:var(--ok); margin:10px 0; }
-    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; min-height:45px;}
+    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; min-height:45px; white-space: pre-wrap; }
     #qrModal{ position:fixed; inset:0; display:none; flex-direction:column; background:#000; z-index:999; }
     #qrVideo{ width:100%; height:75vh; object-fit: cover; }
     #qrClose{ position:absolute; bottom:30px; left:10%; width:80%; background:var(--bad); color:#fff; }
@@ -36,20 +39,21 @@
     <div class="card">
       <div class="row">
         <h1>MIKOSHIYA OS</h1>
-        <div id="stateText" style="font-weight:900">-</div>
+        <div id="stateText" style="font-weight:900; color:var(--mut)">-</div>
       </div>
       <div class="box">
         <div class="mut" style="font-size:12px">会員ID</div>
         <div class="big-id" id="idText">-</div>
-        <div class="row"><span id="today" class="mut">-</span></div>
+        <div class="row"><span id="today" class="mut" style="font-size:12px">-</span></div>
       </div>
       <button id="btnScan">📸 QRスキャン開始</button>
-      <button class="primary" id="btnEnter" disabled>🚪 入室</button>
-      <button class="warn" id="btnSettle" disabled>💰 退室＆精算</button>
+      <button class="primary" id="btnEnter" disabled>🚪 入室を記録</button>
+      <button class="warn" id="btnSettle" disabled>💰 退室＆精算（AirPay）</button>
       <div class="box" style="background:rgba(40,209,124,0.1)">
+        <div class="mut" style="text-align:center; font-size:11px">合計（税込）</div>
         <div class="total-display"><span id="settleTotal">0</span><span style="font-size:18px"> 円</span></div>
       </div>
-      <div class="status" id="status">通信待機中...</div>
+      <div class="status" id="status">通信準備中...</div>
     </div>
   </div>
 
@@ -60,7 +64,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script>
-    // ⚠️ テンチョー、ここです！
+    // 🔗 テンチョーの最新URLを埋め込み済みです
     const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec"; 
     const TOKEN = "MIKOSHIYA_2026";
 
@@ -71,57 +75,69 @@
       qrModal: q("#qrModal"), qrClose: q("#qrClose"), qrVideo: q("#qrVideo")
     };
     function q(s){ return document.querySelector(s); }
-    function setStatus(msg, bad=false){ el.status.textContent = msg; el.status.style.color = bad ? "#ff4d6d" : "#e8eefc"; }
+    function setStatus(msg, bad=false){ 
+      el.status.textContent = msg; 
+      el.status.style.color = bad ? "#ff4d6d" : "#e8eefc"; 
+    }
     
     let memberId = "";
     let settling = false;
 
     async function api(fn, params = {}) {
-      const u = new URL(GAS_EXEC_URL);
-      u.searchParams.set("token", TOKEN); u.searchParams.set("fn", fn);
-      for (const [k,v] of Object.entries(params)) u.searchParams.set(k, String(v));
-      const res = await fetch(u.toString(), { method: "GET", cache: "no-store" });
-      return await res.json();
+      try {
+        const u = new URL(GAS_EXEC_URL);
+        u.searchParams.set("token", TOKEN); u.searchParams.set("fn", fn);
+        for (const [k,v] of Object.entries(params)) u.searchParams.set(k, String(v));
+        const res = await fetch(u.toString(), { method: "GET", cache: "no-store" });
+        return await res.json();
+      } catch (e) {
+        return { ok: false, message: "GASへの通信に失敗しました" };
+      }
     }
 
     async function refresh(){
       if (!memberId) return;
-      setStatus("照会中...");
+      setStatus("会員情報を照会中...");
       const st = await api("getMemberStatus", { member_id: memberId });
       if (!st.ok) return setStatus(st.message, true);
+
       el.today.textContent = st.today;
       el.stateText.textContent = st.is_inside ? "● 入室中" : "○ 退室済";
       el.stateText.style.color = st.is_inside ? "#28d17c" : "#aab6d3";
-      el.idText.textContent = st.member_id;
+      el.idText.textContent = st.member_id; //
       el.settleTotal.textContent = Number(st.stay_yen || 0) + Number(st.pending_merch_yen || 0);
+
       el.btnEnter.disabled = !!st.is_inside;
-      el.btnSettle.disabled = !st.is_inside;
-      setStatus("待機中");
+      el.btnSettle.disabled = !st.is_inside; //
+      setStatus("待機中（読み取り: " + st.member_id + "）");
     }
 
     el.btnScan.addEventListener("click", async ()=>{
+      setStatus("カメラを起動しています...");
       el.qrModal.style.display = "flex";
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      el.qrVideo.srcObject = stream;
-      const scan = () => {
-        if (el.qrModal.style.display === "none") return;
-        if (el.qrVideo.readyState === el.qrVideo.HAVE_ENOUGH_DATA) {
-          const canvas = document.createElement("canvas");
-          canvas.width = el.qrVideo.videoWidth; canvas.height = el.qrVideo.videoHeight;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(el.qrVideo, 0, 0, canvas.width, canvas.height);
-          const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
-          if (code) {
-            memberId = code.data.toUpperCase();
-            el.qrModal.style.display = "none";
-            stream.getTracks().forEach(t => t.stop());
-            refresh();
-            return;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        el.qrVideo.srcObject = stream;
+        const scan = () => {
+          if (el.qrModal.style.display === "none") return;
+          if (el.qrVideo.readyState === el.qrVideo.HAVE_ENOUGH_DATA) {
+            const canvas = document.createElement("canvas");
+            canvas.width = el.qrVideo.videoWidth; canvas.height = el.qrVideo.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(el.qrVideo, 0, 0, canvas.width, canvas.height);
+            const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
+            if (code && code.data) {
+              memberId = code.data.toUpperCase();
+              el.qrModal.style.display = "none";
+              stream.getTracks().forEach(t => t.stop());
+              refresh();
+              return;
+            }
           }
-        }
-        requestAnimationFrame(scan);
-      };
-      scan();
+          requestAnimationFrame(scan);
+        };
+        scan();
+      } catch (e) { setStatus("カメラを起動できませんでした", true); }
     });
 
     el.qrClose.addEventListener("click", () => {
@@ -130,22 +146,27 @@
     });
 
     el.btnEnter.addEventListener("click", async () => {
-      setStatus("入室処理中...");
+      if (el.btnEnter.disabled) return;
+      setStatus("入室処理を実行中...");
       const r = await api("enter", { member_id: memberId });
-      setStatus(r.message, !r.ok); refresh();
+      setStatus(r.message, !r.ok);
+      refresh();
     });
 
     el.btnSettle.addEventListener("click", async () => {
-      if(settling) return;
-      settling = true; setStatus("精算中...");
+      if(settling || el.btnSettle.disabled) return;
+      settling = true; 
+      setStatus("精算と退室を記録中...");
       const r = await api("settleAndExit", { member_id: memberId });
       setStatus(r.message, !r.ok);
-      setTimeout(() => { settling = false; memberId = ""; refresh(); }, 1000);
+      setTimeout(() => { settling = false; memberId = ""; refresh(); }, 1200);
     });
 
     (async function init(){
+      setStatus("初期化通信中...");
       const res = await api("getInitial");
       if(res.ok) { el.today.textContent = res.today; setStatus("待機中"); }
+      else { setStatus("GASとの接続に失敗しました。アクセス設定を確認してください。", true); }
     })();
   </script>
 </body>
