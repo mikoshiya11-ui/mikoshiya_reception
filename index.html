@@ -2,692 +2,185 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MIKOSHIYA OS-Reception</title>
-  <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="apple-touch-icon" href="favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>MIKOSHIYA OS Mobile</title>
   <style>
-   /* ===== MIKOSHIYA OS UI (Unified) ===== */
-:root{
-  --bg:#0b1220;
-  --tx:#e8eefc;
-  --mut:#aab6d3;
+    :root{
+      --bg:#0b1220; --tx:#e8eefc; --mut:#aab6d3;
+      --card-bg: rgba(255,255,255,.06); --card-bd: rgba(255,255,255,.10);
+      --radius: 18px; --ok:#28d17c; --bad:#ff4d6d;
+    }
+    body{ margin:0; font-family:sans-serif; background:var(--bg); color:var(--tx); line-height:1.5; }
+    .wrap{ padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .card{ background:var(--card-bg); border:1px solid var(--card-bd); border-radius:var(--radius); padding:16px; backdrop-filter: blur(10px); }
+    h1{ margin:0; font-size:20px; font-weight:900; }
+    .box{ background:rgba(0,0,0,.3); border-radius:14px; padding:12px; margin-top:8px; }
+    .row{ display:flex; gap:8px; align-items:center; justify-content:space-between; }
+    
+    /* スマホ用ボタン：デカくて押しやすい */
+    button{ 
+      width:100%; min-height:60px; border-radius:12px; border:none; 
+      font-size:18px; font-weight:900; cursor:pointer; margin-top:8px;
+      transition: opacity 0.1s;
+    }
+    button:active{ opacity: 0.7; }
+    button:disabled{ opacity: 0.3; }
+    .primary{ background:var(--ok); color:#062012; }
+    .warn{ background:#cfa7ff; color:#220a35; }
+    #btnScan{ background:rgba(255,255,255,0.1); color:var(--tx); border:1px solid var(--card-bd); }
 
-  --card-bg: rgba(255,255,255,.06);
-  --card-bd: rgba(255,255,255,.10);
-
-  --radius: 22px;
-  --shadow: 0 20px 70px rgba(0,0,0,.35);
-
-  --ok:#28d17c;
-  --bad:#ff4d6d;
-
-  /* buttons */
-  --btn-h: 52px;
-  --btn-radius: 14px;
-  --btn-font: 16px;
-}
-
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
-  background:var(--bg);
-  color:var(--tx);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
-/* layout */
-.wrap, .container, main, .app{
-  max-width:980px;
-  margin:0 auto;
-  padding:22px 16px 36px;
-}
-
-/* cards */
-.card, .panel, .box{
-  background: var(--card-bg);
-  border: 1px solid var(--card-bd);
-  border-radius: var(--radius);
-  backdrop-filter: blur(8px);
-}
-
-.card{
-  padding:18px 18px 16px;
-  box-shadow: var(--shadow);
-}
-
-.box{
-  background:rgba(0,0,0,.22);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;
-  padding:14px;
-}
-
-h1{
-  margin:0 0 10px;
-  font-size:22px;
-  font-weight:900;
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 320px;
-  gap:14px;
-  align-items:start;
-}
-@media (max-width:860px){
-  .grid{ grid-template-columns:1fr; }
-}
-
-.mut{ color:var(--mut); font-weight:800; }
-
-.row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
-}
-
-/* inputs */
-button,select,input{
-  border-radius: var(--btn-radius);
-  border:1px solid var(--card-bd);
-  background:rgba(0,0,0,.20);
-  color:var(--tx);
-  padding:14px 16px;
-  font-weight:900;
-  font-size:var(--btn-font);
-}
-
-button{
-  cursor:pointer;
-  min-height: var(--btn-h);
-  letter-spacing:.02em;
-  box-shadow:0 10px 24px rgba(0,0,0,.25);
-  transition: transform .06s ease, filter .12s ease;
-}
-button:active{ transform: translateY(1px); filter: brightness(.95); }
-button:disabled{ opacity:.35; cursor:not-allowed; }
-
-button.primary{
-  background:rgba(40,209,124,.85);
-  color:#062012;
-  border:none;
-}
-button.warn{
-  background:rgba(207,167,255,.95);
-  color:#220a35;
-  border:none;
-}
-
-/* status */
-.pill{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 10px;
-  border-radius:999px;
-  background:rgba(255,255,255,.08);
-  font-weight:900;
-}
-.dot{ width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.35); }
-.dot.on{ background:rgba(40,209,124,.95); }
-
-.big{ font-size:34px; font-weight:1000; letter-spacing:1px; }
-.big-number{ font-size: clamp(28px, 4vw, 44px); font-weight:800; letter-spacing:.02em; }
-.small-label{ color:rgba(255,255,255,.72); font-size:13px; }
-
-.status{
-  margin-top:12px;
-  padding:12px 14px;
-  border-radius:14px;
-  background:rgba(0,0,0,.25);
-  min-height:46px;
-  white-space:pre-wrap;
-  font-weight:900;
-}
-.status.bad{
-  background:rgba(255,77,109,.12);
-  box-shadow:inset 0 0 0 1px rgba(255,77,109,.35);
-}
-.hint{
-  margin-top:8px;
-  color:rgba(255,255,255,.45);
-  font-size:12px;
-  line-height:1.5;
-}
-
-/* ===== QR modal ===== */
-#qrModal{
-  position:fixed; inset:0;
-  display:none;
-  align-items:center; justify-content:center;
-  background:rgba(0,0,0,.60);
-  z-index:999999;
-}
-#qrCard{
-  width:min(760px,94vw);
-  background:rgba(20,28,45,.98);
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:18px;
-  padding:14px;
-}
-#qrHead{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:8px;
-}
-#qrClose{
-  padding:10px 12px;
-  border-radius:12px;
-  min-width:auto;
-}
-#qrVideo{
-  width:100%;
-  height:60vh;
-  border-radius:14px;
-  background:#000;
-}
-#qrMsg{ margin-top:8px; color:var(--mut); font-weight:900; }
-
-/* ===== iPad / Tablet polish ===== */
-@media (min-width:768px){
-  .grid, .row { gap:16px; }
-  h1 { font-size:34px; }
-}
-
-/* ===== Mobile button tuning (SAFE) =====
-   ※ .row を全体上書きしない。ボタン行だけに .btnRow を付けて使う
-*/
-.btnRow{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:12px;
-}
-.btnRow button{ width:100%; }
-
-/* メインボタンをデカく */
-.btnRow button.warn{
-  min-height:62px;
-  font-size:18px;
-}
-
-@media (max-width:480px){
-  .btnRow{ grid-template-columns: 1fr; }
-}
-/* ===== TOTAL AREA ===== */
-.totalBox{
-  text-align:center;
-  padding:20px;
-}
-
-.totalLabel{
-  font-size:14px;
-  color:var(--mut);
-  margin-bottom:6px;
-}
-
-.totalAmount{
-  font-size:42px;
-  font-weight:900;
-  letter-spacing:1px;
-}
-.totalBox{
-  text-align:center;
-  padding:26px 20px;
-}
-
-.totalAmount{
-  font-size:48px;
-  font-weight:900;
-  letter-spacing:2px;
-  margin:8px 0 4px;
-} 
-   
-</style>
+    .big-id{ font-size:32px; font-weight:900; letter-spacing:1px; margin:4px 0; }
+    .total-display{ font-size:42px; font-weight:900; text-align:center; color:var(--ok); margin:10px 0; }
+    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; }
+    
+    /* QRスキャン画面 */
+    #qrModal{ position:fixed; inset:0; display:none; flex-direction:column; background:#000; z-index:999; }
+    #qrVideo{ width:100%; height:80vh; object-fit: cover; }
+    #qrClose{ position:absolute; bottom:30px; left:10%; width:80%; background:var(--bad); color:#fff; }
+  </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-     <h1>MIKOSHIYA OS</h1>
-     <div class="mut">Reception Terminal</div>
-      <div class="grid">
-        <div>
-          <div class="row" style="justify-content:space-between">
-            <div class="mut">本日: <span id="today">-</span></div>
-            <div class="pill" title="状態">
-              <span class="dot" id="dot"></span>
-              <span id="stateText">-</span>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:10px;justify-content:space-between">
-            <div>
-              <div class="mut">会員ID</div>
-              <div class="big" id="idText">-</div>
-              <div class="hint">A-00001 形式</div>
-            </div>
-            <div class="box" style="min-width:260px">
-              <div class="mut">滞在（参考）</div>
-              <div style="margin-top:6px;font-weight:1000">
-                <div>分：<span id="mins">-</span></div>
-                <div>見込み：<span id="stayYen">-</span> 円</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row btnRow" style="margin-top:12px">
-            <button id="btnScan">QRスキャン</button>
-            <button class="primary" id="btnEnter">入室</button>
-            <button class="warn" id="btnSettle">退室＆精算（AirPay）</button>
-          </div>
-<div class="box" style="margin-top:12px">
-  <div class="mut">未精算 物販</div>
-  <div style="margin-top:6px;font-weight:1000">
-    金額：<span id="merchYen">0</span> 円<br>
-    件数：<span id="merchCount">0</span>
-  </div>
-</div>
-
-<div class="box totalBox" style="margin-top:14px">
-  <div class="totalLabel">合計（税込）</div>
-
-  <div class="totalAmount">
-    <span id="settleTotal">0</span> 円
-  </div>
-
-  <div style="margin-top:10px;font-size:13px;color:var(--mut)">
-    滞在：<span id="settleStay">0</span> 円<br>
-    物販：<span id="settleMerch">0</span> 円
-  </div>
-</div>
-
-
-  <div style="margin-top:10px;font-size:13px;color:var(--mut)">
-    滞在：<span id="settleStay">0</span> 円<br>
-    物販：<span id="settleMerch">0</span> 円
-  </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="box" style="margin-top:14px">
-            
-            <div class="row" style="margin-top:10px">
-              <select id="productSel" style="flex:1;min-width:260px"></select>
-              <input id="qty" type="number" min="1" value="1" style="width:120px"/>
-              <button id="btnAdd">追加</button>
-            </div>
-            <div class="hint">※ 先に会員IDをQRで読み取ってから追加してね</div>
-          </div>
-　　　　　<div>
-  　　　　<div class="mut">物販追加</div>
- 　　　　 <div style="font-size:13px;color:var(--mut);margin-top:4px;">
-    　　　（会員IDに紐付け → 最後にまとめて精算）
-  　　　　</div>
-　　　</div>
-          <div class="status" id="status">待機中</div>
-          <div class="hint">
-            使い方：1) QRスキャン → 2) 入室 or 物販追加 → 3) 退室＆精算（合計表示） → AirPayに合計を入力して支払い
-          </div>
+      <div class="row">
+        <h1>MIKOSHIYA OS</h1>
+        <div style="text-align:right">
+          <div class="mut" style="font-size:12px" id="today">-</div>
+          <div id="stateText" style="font-size:14px; font-weight:900">-</div>
         </div>
+      </div>
 
-        <div class="box">
-          <div class="mut">料金（税込）</div>
-          <div style="margin-top:8px;font-weight:1000;line-height:1.8">
-            <div>ドロップイン：<span id="pUnitYen">-</span>円 / <span id="pUnitMin">-</span>分</div>
-            <div>日上限：<span id="pCap">-</span>円</div>
-            <div>月額：<span id="pMonthly">-</span>円</div>
-          </div>
+      <div class="box">
+        <div class="mut" style="font-size:12px">会員ID</div>
+        <div class="big-id" id="idText">-</div>
+        <div class="row" style="margin-top:8px">
+          <span>滞在: <b id="mins">-</b> 分</span>
+          <span>見込: <b id="stayYen">-</b> 円</span>
         </div>
+      </div>
 
+      <button id="btnScan">📸 QRスキャン</button>
+      <button class="primary" id="btnEnter">🚪 入室する</button>
+      <button class="warn" id="btnSettle">💰 退室＆精算</button>
+
+      <div class="box" style="background:rgba(40,209,124,0.1)">
+        <div class="mut" style="text-align:center; font-size:12px">精算合計（物販込）</div>
+        <div class="total-display"><span id="settleTotal">0</span><span style="font-size:20px"> 円</span></div>
+      </div>
+
+      <div class="status" id="status">待機中</div>
+    </div>
+
+    <div class="card">
+      <div class="mut">🛒 物販追加</div>
+      <select id="productSel" style="width:100%; margin-top:8px; padding:12px;"></select>
+      <div class="row" style="margin-top:8px">
+        <input id="qty" type="number" value="1" style="width:60px; text-align:center">
+        <button id="btnAdd" style="min-height:45px; margin-top:0; flex:1; font-size:14px">追加</button>
       </div>
     </div>
   </div>
 
-  <!-- QR Modal -->
   <div id="qrModal">
-    <div id="qrCard">
-      <div id="qrHead">
-        <b>QRスキャン</b>
-        <button id="qrClose">閉じる</button>
-      </div>
-      <video id="qrVideo" playsinline muted autoplay></video>
-      <div id="qrMsg">カメラを起動しています…</div>
-    </div>
+    <video id="qrVideo" playsinline muted autoplay></video>
+    <button id="qrClose">スキャンをキャンセル</button>
   </div>
 
-  <!-- jsQR fallback -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-
   <script>
-    // ★ここだけ差し替え
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
+    const GAS_EXEC_URL = "ここにGASのURLを貼る";
     const TOKEN = "MIKOSHIYA_2026";
 
     const el = {
-      today: q("#today"),
-      dot: q("#dot"),
-      stateText: q("#stateText"),
-      idText: q("#idText"),
-      mins: q("#mins"),
-      stayYen: q("#stayYen"),
-      merchYen: q("#merchYen"),
-      merchCount: q("#merchCount"),
-      settleStay: q("#settleStay"),
-      settleMerch: q("#settleMerch"),
-      settleTotal: q("#settleTotal"),
-      status: q("#status"),
-      pUnitMin: q("#pUnitMin"),
-      pUnitYen: q("#pUnitYen"),
-      pCap: q("#pCap"),
-      pMonthly: q("#pMonthly"),
-      btnScan: q("#btnScan"),
-      btnEnter: q("#btnEnter"),
-      btnSettle: q("#btnSettle"),
-      productSel: q("#productSel"),
-      qty: q("#qty"),
-      btnAdd: q("#btnAdd"),
-      qrModal: q("#qrModal"),
-      qrClose: q("#qrClose"),
-      qrVideo: q("#qrVideo"),
-      qrMsg: q("#qrMsg"),
+      today: q("#today"), stateText: q("#stateText"), idText: q("#idText"),
+      mins: q("#mins"), stayYen: q("#stayYen"), settleTotal: q("#settleTotal"),
+      status: q("#status"), btnScan: q("#btnScan"), btnEnter: q("#btnEnter"), 
+      btnSettle: q("#btnSettle"), productSel: q("#productSel"), qty: q("#qty"), 
+      btnAdd: q("#btnAdd"), qrModal: q("#qrModal"), qrClose: q("#qrClose"), qrVideo: q("#qrVideo")
     };
 
     function q(s){ return document.querySelector(s); }
-    function setStatus(msg, bad=false){
-      el.status.textContent = msg;
-      el.status.classList.toggle("bad", !!bad);
-    }
-    function fmtYen(n){
-      const x = Number(n||0);
-      return isFinite(x) ? String(Math.floor(x)) : "0";
-    }
-
+    function setStatus(msg, bad=false){ el.status.textContent = msg; el.status.style.color = bad ? "#ff4d6d" : "#e8eefc"; }
+    
     let memberId = "";
-
-    function setId(id){
-      memberId = String(id||"").trim().toUpperCase();
-      el.idText.textContent = memberId || "-";
-    }
+    let settling = false; // 👈 退室ボタンのバグ修正
 
     async function api(fn, params = {}) {
       const u = new URL(GAS_EXEC_URL);
-      u.searchParams.set("token", TOKEN);
-      u.searchParams.set("fn", fn);
+      u.searchParams.set("token", TOKEN); u.searchParams.set("fn", fn);
       for (const [k,v] of Object.entries(params)) u.searchParams.set(k, String(v));
       const res = await fetch(u.toString(), { method: "GET", cache: "no-store" });
       return await res.json();
     }
 
-    async function loadInitial(){
-      const init = await api("getInitial");
-      if (init && init.ok){
-        el.today.textContent = init.today || "-";
-        el.pUnitMin.textContent = init.pricing.dropin_unit_min;
-        el.pUnitYen.textContent = init.pricing.dropin_unit_yen;
-        el.pCap.textContent = init.pricing.daily_cap_yen;
-        el.pMonthly.textContent = init.pricing.monthly_yen;
-      }
-    }
-
-    async function loadProducts(){
-      el.productSel.innerHTML = "";
-      const res = await api("getProducts");
-      const items = (res && res.items) ? res.items : [];
-      if (!items.length){
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "（PRODUCTSに商品がありません）";
-        el.productSel.appendChild(opt);
-        el.btnAdd.disabled = true;
-        return;
-      }
-      for (const p of items){
-        const opt = document.createElement("option");
-        opt.value = p.sku;
-        opt.textContent = `${p.name}（${p.price_yen}円）`;
-        el.productSel.appendChild(opt);
-      }
-      el.btnAdd.disabled = false;
-    }
-
     async function refresh(){
-      if (!memberId){
-        el.dot.classList.remove("on");
-        el.stateText.textContent = "未読み取り";
-        el.mins.textContent = "-";
-        el.stayYen.textContent = "-";
-        el.merchYen.textContent = "-";
-        el.merchCount.textContent = "-";
-        el.settleStay.textContent = "-";
-        el.settleMerch.textContent = "-";
-        el.settleTotal.textContent = "-";
-        el.btnEnter.disabled = true;
-        el.btnSettle.disabled = true;
-        el.btnAdd.disabled = true;
-        return;
-      }
-
+      if (!memberId) { el.btnEnter.disabled = el.btnSettle.disabled = true; return; }
       const st = await api("getMemberStatus", { member_id: memberId });
-      if (!st || !st.ok){
-        setStatus(st && st.message ? st.message : "エラー", true);
-        return;
-      }
+      if (!st.ok) return setStatus(st.message, true);
 
-      el.today.textContent = st.today || "-";
-      el.dot.classList.toggle("on", !!st.is_inside);
-      el.stateText.textContent = st.is_inside ? "入室中" : "退室中";
-
-      el.mins.textContent = (st.minutes ?? "-");
-      el.stayYen.textContent = fmtYen(st.stay_yen);
-
-      el.merchYen.textContent = fmtYen(st.pending_merch_yen);
-      el.merchCount.textContent = (st.pending_merch_count ?? "-");
-
-      el.settleStay.textContent = fmtYen(st.stay_yen);
-      el.settleMerch.textContent = fmtYen(st.pending_merch_yen);
-      el.settleTotal.textContent = fmtYen((Number(st.stay_yen||0) + Number(st.pending_merch_yen||0)));
+      el.today.textContent = st.today;
+      el.stateText.textContent = st.is_inside ? "● 入室中" : "○ 退室済";
+      el.stateText.style.color = st.is_inside ? "#28d17c" : "#aab6d3";
+      el.idText.textContent = st.member_id;
+      el.mins.textContent = st.minutes || "0";
+      el.stayYen.textContent = st.stay_yen || "0";
+      el.settleTotal.textContent = Number(st.stay_yen || 0) + Number(st.pending_merch_yen || 0);
 
       el.btnEnter.disabled = !!st.is_inside;
       el.btnSettle.disabled = !st.is_inside;
-      el.btnAdd.disabled = false;
-    }
-
-    // --- Camera / QR ---
-    let camStream = null;
-    let scanning = false;
-
-    function openModal(){ el.qrModal.style.display = "flex"; }
-    function stopCamera(){
-      scanning = false;
-      if (camStream){
-        camStream.getTracks().forEach(t=>t.stop());
-        camStream = null;
-      }
-      el.qrVideo.srcObject = null;
-    }
-    function closeModal(){
-      el.qrModal.style.display = "none";
-      stopCamera();
-    }
-
-    async function startCamera(){
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      const constraints = {
-  video: {
-    facingMode: { exact: "environment" }
-  },
-  audio: false
-};
-
-      camStream = await navigator.mediaDevices.getUserMedia(constraints);
-      el.qrVideo.srcObject = camStream;
-      el.qrVideo.setAttribute("playsinline","true");
-      el.qrVideo.muted = true;
-      await el.qrVideo.play();
-    }
-
-    async function scanLoop(){
-      if (!scanning) return;
-
-      try{
-        // BarcodeDetector 優先
-        if ("BarcodeDetector" in window){
-          const detector = new BarcodeDetector({ formats:["qr_code"] });
-          const codes = await detector.detect(el.qrVideo);
-          if (codes && codes.length){
-            onScan(codes[0].rawValue || "");
-            return;
-          }
-        }
-        // jsQR fallback
-        const w = el.qrVideo.videoWidth, h = el.qrVideo.videoHeight;
-        if (w && h){
-          const canvas = document.createElement("canvas");
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(el.qrVideo, 0, 0, w, h);
-          const img = ctx.getImageData(0,0,w,h);
-          const code = jsQR(img.data, w, h);
-          if (code && code.data){
-            onScan(code.data);
-            return;
-          }
-        }
-      }catch(e){ /* ignore */ }
-
-      requestAnimationFrame(scanLoop);
-    }
-
-    function onScan(raw){
-      const id = String(raw||"").trim().toUpperCase();
-      if (!id) return;
-      setId(id);
-      el.qrMsg.textContent = `読み取り：${id}`;
-      setStatus(`読み取り：${id}`);
-      setTimeout(async ()=>{
-        closeModal();
-        await refresh();
-      }, 250);
     }
 
     el.btnScan.addEventListener("click", async ()=>{
-      setStatus("カメラ起動中…");
-      el.qrMsg.textContent = "カメラを起動しています…";
-      try{
-        openModal();
-        await startCamera();
-        el.qrMsg.textContent = "QRに向けてください";
-        scanning = true;
-        scanLoop();
-        setStatus("QRをスキャンしてください");
-      }catch(e){
-        setStatus("カメラ起動失敗: " + (e && e.message ? e.message : e), true);
-        el.qrMsg.textContent = "失敗: " + (e && e.message ? e.message : e);
-      }
+      el.qrModal.style.display = "flex";
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      el.qrVideo.srcObject = stream;
+      const scan = () => {
+        if (el.qrModal.style.display === "none") return;
+        if (el.qrVideo.readyState === el.qrVideo.HAVE_ENOUGH_DATA) {
+          const canvas = document.createElement("canvas");
+          canvas.width = el.qrVideo.videoWidth; canvas.height = el.qrVideo.videoHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(el.qrVideo, 0, 0, canvas.width, canvas.height);
+          const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
+          if (code) {
+            memberId = code.data.toUpperCase();
+            closeModal(stream); refresh(); return;
+          }
+        }
+        requestAnimationFrame(scan);
+      };
+      scan();
     });
-    el.qrClose.addEventListener("click", closeModal);
 
-    // --- Actions ---
-    el.btnEnter.addEventListener("click", async () => {
-
-  if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-
-  // ★ 追加：連打防止
-  if (el.btnEnter.disabled) return;
-  el.btnEnter.disabled = true;
-
-  setStatus("入室処理中...");
-
-  try {
-    const r = await api("enter", { member_id: memberId, source: "kiosk" });
-    setStatus(r && r.message ? r.message : "完了", !(r && r.ok));
-    await refresh();
-  } catch (e) {
-    setStatus("通信エラー: " + (e && e.message ? e.message : e), true);
-  } finally {
-    // ★ 通信終わったら復活
-    el.btnEnter.disabled = false;
-  }
-
-});
-
-    el.btnAdd.addEventListener("click", async () => {
-  if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-
-  // ★連打防止
-  if (el.btnAdd.disabled) return;
-  el.btnAdd.disabled = true;
-
-  try {
-    const sku = String(el.productSel.value || "");
-    const qty = Number(el.qty.value || 1);
-    if (!sku) return setStatus("商品を選んでね", true);
-
-    setStatus("物販追加中…");
-
-    const r = await api("addMerch", { member_id: memberId, sku, qty });
-    if (!r || !r.ok) {
-      setStatus((r && r.message) ? r.message : "失敗", true);
-      return;
+    function closeModal(stream){
+      el.qrModal.style.display = "none";
+      if (stream) stream.getTracks().forEach(t => t.stop());
     }
+    el.qrClose.addEventListener("click", () => closeModal(el.qrVideo.srcObject));
 
-    setStatus(r.message || "追加しました");
-    await refresh();
-  } catch (e) {
-    setStatus("通信エラー: " + (e && e.message ? e.message : e), true);
-  } finally {
-    // ★必ず戻す（returnが途中にあってもOK）
-    el.btnAdd.disabled = false;
-  }
-});
-    
-el.btnSettle.addEventListener("click", async () => {
-  if (settling) return;              // 連打無視
-  if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-
-  settling = true;
-  el.btnSettle.disabled = true;
-  el.btnSettle.style.opacity = "0.7";
-
-  setStatus("退室＆精算中…");
-
-  try {
-    const r = await api("settleAndExit", {
-      member_id: memberId,
-      method: "AirPay",
-      note: ""
+    el.btnEnter.addEventListener("click", async () => {
+      setStatus("処理中...");
+      const r = await api("enter", { member_id: memberId });
+      setStatus(r.message, !r.ok); refresh();
     });
-    setStatus(r && r.message ? r.message : "完了", !(r && r.ok));
-    await refresh();
-  } catch (e) {
-    setStatus("通信エラー: " + (e?.message || e), true);
-  } finally {
-    // ちょい待ってから戻す（連打癖対策）
-    setTimeout(() => {
-      settling = false;
-      el.btnSettle.disabled = false;
-      el.btnSettle.style.opacity = "";
-    }, 800);
-  }
-});
 
-    (async function boot(){
-      try{
-        setStatus("初期化中…");
-        await loadInitial();
-        await loadProducts();
-        await refresh();
-        setStatus("待機中");
-      }catch(e){
-        setStatus("初期化失敗: " + (e && e.message ? e.message : e), true);
-      }
+    el.btnSettle.addEventListener("click", async () => {
+      if(settling) return;
+      settling = true; setStatus("精算中...");
+      const r = await api("settleAndExit", { member_id: memberId });
+      setStatus(r.message, !r.ok);
+      setTimeout(() => { settling = false; memberId = ""; refresh(); }, 1000);
+    });
+
+    (async function init(){
+      const res = await api("getInitial");
+      if(res.ok) el.today.textContent = res.today;
+      const p = await api("getProducts");
+      if(p.ok) p.items.forEach(i => {
+        const opt = document.createElement("option");
+        opt.value = i.sku; opt.textContent = `${i.name} (${i.price_yen}円)`;
+        el.productSel.appendChild(opt);
+      });
     })();
   </script>
 </body>
