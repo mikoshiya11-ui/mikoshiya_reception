@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MIKOSHIYA OS Mobile</title>
+  <title>MIKOSHIYA OS Mobile v1.1</title>
   <style>
     :root{
       --bg:#0b1220; --tx:#e8eefc; --mut:#aab6d3;
@@ -14,28 +14,20 @@
     .wrap{ padding:16px; display:flex; flex-direction:column; gap:12px; }
     .card{ background:var(--card-bg); border:1px solid var(--card-bd); border-radius:var(--radius); padding:16px; backdrop-filter: blur(10px); }
     h1{ margin:0; font-size:20px; font-weight:900; }
-    .box{ background:rgba(0,0,0,.3); border-radius:14px; padding:12px; margin-top:8px; }
+    .box{ background:rgba(0,0,0,0.3); border-radius:14px; padding:12px; margin-top:8px; }
     .row{ display:flex; gap:8px; align-items:center; justify-content:space-between; }
-    
-    /* スマホ用ボタン：デカくて押しやすい */
     button{ 
-      width:100%; min-height:60px; border-radius:12px; border:none; 
+      width:100%; min-height:62px; border-radius:12px; border:none; 
       font-size:18px; font-weight:900; cursor:pointer; margin-top:8px;
-      transition: opacity 0.1s;
     }
-    button:active{ opacity: 0.7; }
-    button:disabled{ opacity: 0.3; }
     .primary{ background:var(--ok); color:#062012; }
     .warn{ background:#cfa7ff; color:#220a35; }
     #btnScan{ background:rgba(255,255,255,0.1); color:var(--tx); border:1px solid var(--card-bd); }
-
     .big-id{ font-size:32px; font-weight:900; letter-spacing:1px; margin:4px 0; }
     .total-display{ font-size:42px; font-weight:900; text-align:center; color:var(--ok); margin:10px 0; }
-    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; }
-    
-    /* QRスキャン画面 */
+    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; min-height:45px;}
     #qrModal{ position:fixed; inset:0; display:none; flex-direction:column; background:#000; z-index:999; }
-    #qrVideo{ width:100%; height:80vh; object-fit: cover; }
+    #qrVideo{ width:100%; height:75vh; object-fit: cover; }
     #qrClose{ position:absolute; bottom:30px; left:10%; width:80%; background:var(--bad); color:#fff; }
   </style>
 </head>
@@ -44,66 +36,45 @@
     <div class="card">
       <div class="row">
         <h1>MIKOSHIYA OS</h1>
-        <div style="text-align:right">
-          <div class="mut" style="font-size:12px" id="today">-</div>
-          <div id="stateText" style="font-size:14px; font-weight:900">-</div>
-        </div>
+        <div id="stateText" style="font-weight:900">-</div>
       </div>
-
       <div class="box">
         <div class="mut" style="font-size:12px">会員ID</div>
         <div class="big-id" id="idText">-</div>
-        <div class="row" style="margin-top:8px">
-          <span>滞在: <b id="mins">-</b> 分</span>
-          <span>見込: <b id="stayYen">-</b> 円</span>
-        </div>
+        <div class="row"><span id="today" class="mut">-</span></div>
       </div>
-
-      <button id="btnScan">📸 QRスキャン</button>
-      <button class="primary" id="btnEnter">🚪 入室する</button>
-      <button class="warn" id="btnSettle">💰 退室＆精算</button>
-
+      <button id="btnScan">📸 QRスキャン開始</button>
+      <button class="primary" id="btnEnter" disabled>🚪 入室</button>
+      <button class="warn" id="btnSettle" disabled>💰 退室＆精算</button>
       <div class="box" style="background:rgba(40,209,124,0.1)">
-        <div class="mut" style="text-align:center; font-size:12px">精算合計（物販込）</div>
-        <div class="total-display"><span id="settleTotal">0</span><span style="font-size:20px"> 円</span></div>
+        <div class="total-display"><span id="settleTotal">0</span><span style="font-size:18px"> 円</span></div>
       </div>
-
-      <div class="status" id="status">待機中</div>
-    </div>
-
-    <div class="card">
-      <div class="mut">🛒 物販追加</div>
-      <select id="productSel" style="width:100%; margin-top:8px; padding:12px;"></select>
-      <div class="row" style="margin-top:8px">
-        <input id="qty" type="number" value="1" style="width:60px; text-align:center">
-        <button id="btnAdd" style="min-height:45px; margin-top:0; flex:1; font-size:14px">追加</button>
-      </div>
+      <div class="status" id="status">通信待機中...</div>
     </div>
   </div>
 
   <div id="qrModal">
     <video id="qrVideo" playsinline muted autoplay></video>
-    <button id="qrClose">スキャンをキャンセル</button>
+    <button id="qrClose">キャンセル</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script>
-    const GAS_EXEC_URL = "ここにGASのURLを貼る";
+    // ⚠️ テンチョー、ここです！
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec"; 
     const TOKEN = "MIKOSHIYA_2026";
 
     const el = {
       today: q("#today"), stateText: q("#stateText"), idText: q("#idText"),
-      mins: q("#mins"), stayYen: q("#stayYen"), settleTotal: q("#settleTotal"),
-      status: q("#status"), btnScan: q("#btnScan"), btnEnter: q("#btnEnter"), 
-      btnSettle: q("#btnSettle"), productSel: q("#productSel"), qty: q("#qty"), 
-      btnAdd: q("#btnAdd"), qrModal: q("#qrModal"), qrClose: q("#qrClose"), qrVideo: q("#qrVideo")
+      settleTotal: q("#settleTotal"), status: q("#status"), 
+      btnScan: q("#btnScan"), btnEnter: q("#btnEnter"), btnSettle: q("#btnSettle"),
+      qrModal: q("#qrModal"), qrClose: q("#qrClose"), qrVideo: q("#qrVideo")
     };
-
     function q(s){ return document.querySelector(s); }
     function setStatus(msg, bad=false){ el.status.textContent = msg; el.status.style.color = bad ? "#ff4d6d" : "#e8eefc"; }
     
     let memberId = "";
-    let settling = false; // 👈 退室ボタンのバグ修正
+    let settling = false;
 
     async function api(fn, params = {}) {
       const u = new URL(GAS_EXEC_URL);
@@ -114,20 +85,18 @@
     }
 
     async function refresh(){
-      if (!memberId) { el.btnEnter.disabled = el.btnSettle.disabled = true; return; }
+      if (!memberId) return;
+      setStatus("照会中...");
       const st = await api("getMemberStatus", { member_id: memberId });
       if (!st.ok) return setStatus(st.message, true);
-
       el.today.textContent = st.today;
       el.stateText.textContent = st.is_inside ? "● 入室中" : "○ 退室済";
       el.stateText.style.color = st.is_inside ? "#28d17c" : "#aab6d3";
       el.idText.textContent = st.member_id;
-      el.mins.textContent = st.minutes || "0";
-      el.stayYen.textContent = st.stay_yen || "0";
       el.settleTotal.textContent = Number(st.stay_yen || 0) + Number(st.pending_merch_yen || 0);
-
       el.btnEnter.disabled = !!st.is_inside;
       el.btnSettle.disabled = !st.is_inside;
+      setStatus("待機中");
     }
 
     el.btnScan.addEventListener("click", async ()=>{
@@ -144,7 +113,10 @@
           const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
           if (code) {
             memberId = code.data.toUpperCase();
-            closeModal(stream); refresh(); return;
+            el.qrModal.style.display = "none";
+            stream.getTracks().forEach(t => t.stop());
+            refresh();
+            return;
           }
         }
         requestAnimationFrame(scan);
@@ -152,14 +124,13 @@
       scan();
     });
 
-    function closeModal(stream){
+    el.qrClose.addEventListener("click", () => {
       el.qrModal.style.display = "none";
-      if (stream) stream.getTracks().forEach(t => t.stop());
-    }
-    el.qrClose.addEventListener("click", () => closeModal(el.qrVideo.srcObject));
+      if (el.qrVideo.srcObject) el.qrVideo.srcObject.getTracks().forEach(t => t.stop());
+    });
 
     el.btnEnter.addEventListener("click", async () => {
-      setStatus("処理中...");
+      setStatus("入室処理中...");
       const r = await api("enter", { member_id: memberId });
       setStatus(r.message, !r.ok); refresh();
     });
@@ -174,13 +145,7 @@
 
     (async function init(){
       const res = await api("getInitial");
-      if(res.ok) el.today.textContent = res.today;
-      const p = await api("getProducts");
-      if(p.ok) p.items.forEach(i => {
-        const opt = document.createElement("option");
-        opt.value = i.sku; opt.textContent = `${i.name} (${i.price_yen}円)`;
-        el.productSel.appendChild(opt);
-      });
+      if(res.ok) { el.today.textContent = res.today; setStatus("待機中"); }
     })();
   </script>
 </body>
