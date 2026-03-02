@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>MIKOSHIYA Order</title>
+  <style>
+    :root{ --bg:#0b1220; --tx:#e8eefc; --mut:#aab6d3; --card-bg: rgba(255,255,255,.06); --card-bd: rgba(255,255,255,.10); --radius: 18px; --ok:#28d17c; --bad:#ff4d6d; }
+    body{ margin:0; font-family:sans-serif; background:var(--bg); color:var(--tx); line-height:1.5; }
+    .wrap{ padding:16px; display:flex; flex-direction:column; gap:12px; max-width:500px; margin:0 auto; }
+    .card{ background:var(--card-bg); border:1px solid var(--card-bd); border-radius:var(--radius); padding:20px; backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+    .box{ background:rgba(0,0,0,0.3); border-radius:14px; padding:15px; margin-top:10px; text-align:center; }
+    button{ width:100%; min-height:60px; border-radius:12px; border:none; font-size:18px; font-weight:900; cursor:pointer; margin-top:15px; background:var(--ok); color:#062012; }
+    button:active{ transform: scale(0.98); opacity: 0.8; }
+    button#btnScan{ background:rgba(255,255,255,0.1); color:#fff; border:1px solid var(--card-bd); }
+    .total-display{ font-size:48px; font-weight:900; color:var(--ok); margin:10px 0; }
+    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; text-align:center; }
+    select, input{ background:rgba(0,0,0,0.2); border:1px solid var(--card-bd); color:#fff; padding:12px; border-radius:8px; width:100%; box-sizing:border-box; font-size:16px; margin-bottom:10px; }
+    #qrModal{ position:fixed; inset:0; display:none; flex-direction:column; background:#000; z-index:999; }
+    #qrVideo{ width:100%; height:80vh; object-fit: cover; }
+    #qrClose{ position:absolute; bottom:30px; left:10%; width:80%; background:var(--bad); color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="loginArea">
+      <h1 style="font-size:20px; text-align:center;">MIKOSHIYA セルフ注文</h1>
+      <p style="text-align:center; color:var(--mut);">席に座ったまま注文できます。<br>会員証をスキャンしてください。</p>
+      <button id="btnScan">📸 会員証をスキャン</button>
+    </div>
+
+    <div class="card" id="orderArea" style="display:none;">
+      <div id="idDisplay" style="text-align:center; font-weight:900; color:var(--mut);">会員ID: ---</div>
+      <div class="box" style="background:rgba(40,209,124,0.1)">
+        <div style="font-size:12px; color:var(--mut)">現在のご利用合計</div>
+        <div class="total-display"><span id="settleTotal">0</span> 円</div>
+      </div>
+      <div style="margin-top:20px;">
+        <select id="productSel"></select>
+        <div style="display:flex; gap:10px;">
+          <input id="qty" type="number" value="1" min="1" style="width:80px; text-align:center">
+          <button id="btnAdd" style="margin-top:0; flex:1;">注文を追加</button>
+        </div>
+      </div>
+    </div>
+    <div class="status" id="status">準備中...</div>
+  </div>
+
+  <div id="qrModal"><video id="qrVideo" playsinline muted autoplay></video><button id="qrClose">キャンセル</button></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script>
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
+    const TOKEN = "MIKOSHIYA_2026";
+    let memberId = "";
+
+    const el = {
+      loginArea: q("#loginArea"), orderArea: q("#orderArea"), idDisplay: q("#idDisplay"),
+      settleTotal: q("#settleTotal"), status: q("#status"), productSel: q("#productSel"),
+      qty: q("#qty"), btnAdd: q("#btnAdd"), btnScan: q("#btnScan"),
+      qrModal: q("#qrModal"), qrVideo: q("#qrVideo"), qrClose: q("#qrClose")
+    };
+    function q(s){ return document.querySelector(s); }
+
+    async function api(fn, p = {}) {
+      const u = new URL(GAS_EXEC_URL);
+      u.searchParams.set("token", TOKEN); u.searchParams.set("fn", fn);
+      for (const [k,v] of Object.entries(p)) u.searchParams.set(k, String(v));
+      const res = await fetch(u.toString()); return await res.json();
+    }
+
+    async function refresh() {
+      const st = await api("getMemberStatus", { member_id: memberId });
+      if (st.ok) {
+        el.loginArea.style.display = "none";
+        el.orderArea.style.display = "block";
+        el.idDisplay.textContent = "会員ID: " + st.member_id;
+        el.settleTotal.textContent = Number(st.stay_yen || 0) + Number(st.merch_yen || 0);
+        el.status.textContent = "ご注文は席までお持ちします";
+      } else {
+        el.status.textContent = "入室記録がありません。受付をお願いします。";
+      }
+    }
+
+    el.btnScan.addEventListener("click", async ()=>{
+      el.qrModal.style.display = "flex";
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      el.qrVideo.srcObject = stream;
+      const scan = () => {
+        if (el.qrModal.style.display === "none") return;
+        if (el.qrVideo.readyState === el.qrVideo.HAVE_ENOUGH_DATA) {
+          const canvas = document.createElement("canvas");
+          canvas.width = el.qrVideo.videoWidth; canvas.height = el.qrVideo.videoHeight;
+          const ctx = canvas.getContext("2d"); ctx.drawImage(el.qrVideo, 0, 0, canvas.width, canvas.height);
+          const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
+          if (code) {
+            memberId = code.data.toUpperCase();
+            el.qrModal.style.display = "none";
+            stream.getTracks().forEach(t => t.stop());
+            refresh(); return;
+          }
+        }
+        requestAnimationFrame(scan);
+      };
+      scan();
+    });
+
+    el.qrClose.addEventListener("click", () => { el.qrModal.style.display = "none"; if (el.qrVideo.srcObject) el.qrVideo.srcObject.getTracks().forEach(t => t.stop()); });
+
+    el.btnAdd.addEventListener("click", async () => {
+      el.btnAdd.disabled = true; el.status.textContent = "送信中...";
+      const r = await api("addMerch", { member_id: memberId, sku: el.productSel.value, qty: el.qty.value });
+      el.status.textContent = r.message;
+      await refresh(); el.btnAdd.disabled = false;
+    });
+
+    (async function init(){
+      const p = await api("getProducts");
+      if(p.ok) p.items.forEach(i => {
+        const opt = document.createElement("option");
+        opt.value = i.sku; opt.textContent = `${i.name} (${i.price_yen}円)`;
+        el.productSel.appendChild(opt);
+      });
+      el.status.textContent = "会員証をスキャンしてください";
+    })();
+  </script>
+</body>
+</html>
