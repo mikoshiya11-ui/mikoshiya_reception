@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MIKOSHIYA OS Mobile v1.2</title>
+  <title>MIKOSHIYA OS Mobile v1.22</title>
   <style>
     :root{
       --bg:#0b1220; --tx:#e8eefc; --mut:#aab6d3;
@@ -16,11 +16,7 @@
     h1{ margin:0; font-size:20px; font-weight:900; }
     .box{ background:rgba(0,0,0,0.3); border-radius:14px; padding:12px; margin-top:8px; }
     .row{ display:flex; gap:8px; align-items:center; justify-content:space-between; }
-    button{ 
-      width:100%; min-height:62px; border-radius:12px; border:none; 
-      font-size:18px; font-weight:900; cursor:pointer; margin-top:8px;
-      transition: transform 0.1s, opacity 0.1s;
-    }
+    button{ width:100%; min-height:62px; border-radius:12px; border:none; font-size:18px; font-weight:900; cursor:pointer; margin-top:8px; transition: transform 0.1s, opacity 0.1s; }
     button:active{ transform: scale(0.98); opacity: 0.8; }
     button:disabled{ opacity: 0.2; cursor: not-allowed; }
     .primary{ background:var(--ok); color:#062012; }
@@ -33,63 +29,36 @@
     #qrModal{ position:fixed; inset:0; display:none; flex-direction:column; background:#000; z-index:999; }
     #qrVideo{ width:100%; height:75vh; object-fit: cover; }
     #qrClose{ position:absolute; bottom:30px; left:10%; width:80%; background:var(--bad); color:#fff; }
-    select, input{ background:rgba(0,0,0,0.2); border:1px solid var(--card-bd); color:#fff; padding:10px; border-radius:8px; width: 100%; box-sizing: border-box;}
+    select, input{ background:rgba(0,0,0,0.2); border:1px solid var(--card-bd); color:#fff; padding:10px; border-radius:8px; width:100%; box-sizing:border-box; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <div class="row">
-        <h1>MIKOSHIYA OS</h1>
-        <div id="stateText" style="font-weight:900; color:var(--mut)">-</div>
-      </div>
-      <div class="box">
-        <div class="mut" style="font-size:12px">会員ID</div>
-        <div class="big-id" id="idText">-</div>
-        <div class="row"><span id="today" class="mut" style="font-size:12px">-</span></div>
-      </div>
+      <div class="row"><h1>MIKOSHIYA OS</h1><div id="stateText" style="font-weight:900">-</div></div>
+      <div class="box"><div class="mut" style="font-size:12px">会員ID</div><div class="big-id" id="idText">-</div><span id="today" class="mut" style="font-size:12px">-</span></div>
       <button id="btnScan">📸 QRスキャン開始</button>
       <button class="primary" id="btnEnter" disabled>🚪 入室を記録</button>
-      <button class="warn" id="btnSettle" disabled>💰 退室＆精算（AirPay）</button>
-      <div class="box" style="background:rgba(40,209,124,0.1)">
-        <div class="mut" style="text-align:center; font-size:11px">精算合計（物販込）</div>
-        <div class="total-display"><span id="settleTotal">0</span><span style="font-size:18px"> 円</span></div>
-      </div>
+      <button class="warn" id="btnSettle" disabled>💰 退室＆精算</button>
+      <div class="box" style="background:rgba(40,209,124,0.1)"><div class="total-display"><span id="settleTotal">0</span> 円</div></div>
       <div class="status" id="status">通信準備中...</div>
     </div>
-
     <div class="card">
       <div class="mut" style="font-size:12px; margin-bottom:8px">🛒 物販追加</div>
       <select id="productSel" style="margin-bottom:8px"></select>
-      <div class="row">
-        <input id="qty" type="number" value="1" min="1" style="width:70px; text-align:center">
-        <button class="primary" id="btnAdd">追加</button>
-      </div>
+      <div class="row"><input id="qty" type="number" value="1" min="1" style="width:70px; text-align:center"><button class="primary" id="btnAdd">追加</button></div>
     </div>
   </div>
-
-  <div id="qrModal">
-    <video id="qrVideo" playsinline muted autoplay></video>
-    <button id="qrClose">キャンセル</button>
-  </div>
+  <div id="qrModal"><video id="qrVideo" playsinline muted autoplay></video><button id="qrClose">キャンセル</button></div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script>
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec"; 
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
     const TOKEN = "MIKOSHIYA_2026";
-
-    const el = {
-      today: q("#today"), stateText: q("#stateText"), idText: q("#idText"),
-      settleTotal: q("#settleTotal"), status: q("#status"), 
-      btnScan: q("#btnScan"), btnEnter: q("#btnEnter"), btnSettle: q("#btnSettle"),
-      productSel: q("#productSel"), qty: q("#qty"), btnAdd: q("#btnAdd"),
-      qrModal: q("#qrModal"), qrClose: q("#qrClose"), qrVideo: q("#qrVideo")
-    };
+    const el = { today: q("#today"), stateText: q("#stateText"), idText: q("#idText"), settleTotal: q("#settleTotal"), status: q("#status"), btnScan: q("#btnScan"), btnEnter: q("#btnEnter"), btnSettle: q("#btnSettle"), productSel: q("#productSel"), qty: q("#qty"), btnAdd: q("#btnAdd"), qrModal: q("#qrModal"), qrClose: q("#qrClose"), qrVideo: q("#qrVideo") };
     function q(s){ return document.querySelector(s); }
     function setStatus(msg, bad=false){ el.status.textContent = msg; el.status.style.color = bad ? "#ff4d6d" : "#e8eefc"; }
-    
-    let memberId = "";
-    let settling = false; //
+    let memberId = "", settling = false;
 
     async function api(fn, params = {}) {
       try {
@@ -98,29 +67,25 @@
         for (const [k,v] of Object.entries(params)) u.searchParams.set(k, String(v));
         const res = await fetch(u.toString(), { method: "GET", cache: "no-store" });
         return await res.json();
-      } catch (e) { return { ok: false, message: "GASへの通信に失敗しました" }; }
+      } catch (e) { return { ok: false, message: "通信失敗" }; }
     }
 
     async function refresh(){
       if (!memberId) return;
-      setStatus("会員情報を照会中...");
+      setStatus("照会中...");
       const st = await api("getMemberStatus", { member_id: memberId });
       if (!st.ok) return setStatus(st.message, true);
-
       el.today.textContent = st.today;
       el.stateText.textContent = st.is_inside ? "● 入室中" : "○ 退室済";
       el.stateText.style.color = st.is_inside ? "#28d17c" : "#aab6d3";
       el.idText.textContent = st.member_id;
-      // 席代＋物販代（VISITシートF列）を合計表示
       el.settleTotal.textContent = Number(st.stay_yen || 0) + Number(st.merch_yen || 0);
-
       el.btnEnter.disabled = !!st.is_inside;
       el.btnSettle.disabled = !st.is_inside;
-      setStatus("待機中（読み取り: " + st.member_id + "）");
+      setStatus("待機中");
     }
 
     el.btnScan.addEventListener("click", async ()=>{
-      setStatus("カメラを起動しています...");
       el.qrModal.style.display = "flex";
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -130,74 +95,39 @@
           if (el.qrVideo.readyState === el.qrVideo.HAVE_ENOUGH_DATA) {
             const canvas = document.createElement("canvas");
             canvas.width = el.qrVideo.videoWidth; canvas.height = el.qrVideo.videoHeight;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(el.qrVideo, 0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext("2d"); ctx.drawImage(el.qrVideo, 0, 0, canvas.width, canvas.height);
             const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
-            if (code) {
-              memberId = code.data.toUpperCase();
-              el.qrModal.style.display = "none";
-              stream.getTracks().forEach(t => t.stop());
-              refresh();
-              return;
-            }
+            if (code) { memberId = code.data.toUpperCase(); el.qrModal.style.display = "none"; stream.getTracks().forEach(t => t.stop()); refresh(); return; }
           }
           requestAnimationFrame(scan);
         };
         scan();
-      } catch (e) { setStatus("カメラを起動できませんでした", true); }
+      } catch (e) { setStatus("カメラ失敗", true); }
     });
 
-    el.qrClose.addEventListener("click", () => {
-      el.qrModal.style.display = "none";
-      if (el.qrVideo.srcObject) el.qrVideo.srcObject.getTracks().forEach(t => t.stop());
-    });
+    el.qrClose.addEventListener("click", () => { el.qrModal.style.display = "none"; if (el.qrVideo.srcObject) el.qrVideo.srcObject.getTracks().forEach(t => t.stop()); });
 
-    el.btnEnter.addEventListener("click", async () => {
-      if (el.btnEnter.disabled) return;
-      setStatus("入室処理を実行中...");
-      const r = await api("enter", { member_id: memberId });
-      setStatus(r.message, !r.ok);
-      refresh();
-    });
+    el.btnEnter.addEventListener("click", async () => { setStatus("入室中..."); const r = await api("enter", { member_id: memberId }); setStatus(r.message, !r.ok); refresh(); });
 
     el.btnSettle.addEventListener("click", async () => {
-      if(settling || el.btnSettle.disabled) return;
-      settling = true; setStatus("精算と退室を記録中...");
+      if(settling) return; settling = true; setStatus("精算中...");
       const r = await api("settleAndExit", { member_id: memberId });
       setStatus(r.message, !r.ok);
       setTimeout(() => { settling = false; memberId = ""; refresh(); }, 1200);
     });
 
-    // 物販追加ボタンのロジック
     el.btnAdd.addEventListener("click", async () => {
-      if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-      setStatus("物販を追加中...");
+      if (!memberId) return setStatus("QRをスキャンしてね", true);
+      setStatus("物販追加中...");
       const r = await api("addMerch", { member_id: memberId, sku: el.productSel.value, qty: el.qty.value });
-      setStatus(r.message, !r.ok);
-      refresh(); // 追加後に合計金額を更新
-    });
-　　
-    // 🛍️ 消えていた物販ボタンを復活！
-    el.btnAdd.addEventListener("click", async () => {
-      if (!memberId) return setStatus("先にQRで会員IDを読み取ってね", true);
-      setStatus("物販を追加中...");
-      const r = await api("addMerch", { member_id: memberId, sku: el.productSel.value, qty: el.qty.value });
-      setStatus(r.message, !r.ok);
-      refresh(); // これで画面下の合計金額がパッと増える！
+      setStatus(r.message, !r.ok); refresh();
     });
 
     (async function init(){
-      setStatus("初期化通信中...");
-      const res = await api("getInitial");
-      if(res.ok) { el.today.textContent = res.today; setStatus("待機中"); }
-      else { setStatus("GASへの接続失敗", true); }
-      
+      const res = await api("getInitial"); if(res.ok) el.today.textContent = res.today;
       const p = await api("getProducts");
-      if(p.ok) p.items.forEach(i => {
-        const opt = document.createElement("option");
-        opt.value = i.sku; opt.textContent = `${i.name} (${i.price_yen}円)`;
-        el.productSel.appendChild(opt);
-      });
+      if(p.ok) p.items.forEach(i => { const opt = document.createElement("option"); opt.value = i.sku; opt.textContent = `${i.name} (${i.price_yen}円)`; el.productSel.appendChild(opt); });
+      setStatus("待機中");
     })();
   </script>
 </body>
