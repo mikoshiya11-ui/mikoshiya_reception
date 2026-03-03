@@ -22,15 +22,20 @@
     .primary{ background:var(--ok); color:#062012; }
     .warn{ background:#cfa7ff; color:#220a35; }
     #btnScan{ background:rgba(255,255,255,0.1); color:var(--tx); border:1px solid var(--card-bd); }
+    
     /* 🚗 駐車場ボタン用のスタイル */
-    .spot-btn { flex: 1; min-height: 48px; margin-top: 0; font-size: 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-bd); color: var(--tx); }
+    .spot-btn { flex: 1; min-height: 48px; margin-top: 0; font-size: 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-bd); color: var(--tx); border-radius: 8px;}
     .spot-btn.selected { background: var(--ok); color: #062012; border-color: var(--ok); }
     .spot-btn.occupied { background: var(--bad); color: #fff; opacity: 0.3; pointer-events: none; }
     
     #btnAdd{ min-height:48px; font-size:14px; margin-top:0; flex:1; }
     .big-id{ font-size:32px; font-weight:900; letter-spacing:1px; margin:4px 0; }
     .total-display{ font-size:42px; font-weight:900; text-align:center; color:var(--ok); margin:10px 0; }
-    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; min-height:45px; white-space: pre-wrap; }
+    
+    /* 金額内訳用のスタイル追加 */
+    .breakdown { font-size: 12px; color: var(--mut); text-align: center; margin-top: -5px; margin-bottom: 5px;}
+    
+    .status{ padding:12px; border-radius:12px; background:rgba(0,0,0,0.4); font-size:14px; font-weight:900; margin-top:10px; min-height:45px; white-space: pre-wrap; text-align:center;}
     #qrModal{ position:fixed; inset:0; display:none; flex-direction:column; background:#000; z-index:999; }
     #qrVideo{ width:100%; height:75vh; object-fit: cover; }
     #qrClose{ position:absolute; bottom:30px; left:10%; width:80%; background:var(--bad); color:#fff; }
@@ -52,28 +57,40 @@
 
       <button class="primary" id="btnEnter" disabled>🚪 入室を記録</button>
       <button class="warn" id="btnSettle" disabled>💰 退室＆精算</button>
-      <div class="box" style="background:rgba(40,209,124,0.1)"><div class="total-display"><span id="settleTotal">0</span> 円</div></div>
+      
+      <div class="box" style="background:rgba(40,209,124,0.1)">
+        <div class="total-display"><span id="settleTotal">0</span> 円</div>
+        <div class="breakdown" id="feeBreakdown">席代: 0円 / 物販: 0円</div>
+      </div>
+      
       <div class="status" id="status">通信準備中...</div>
     </div>
 
-    <div class="card">
+    <div class="card" id="merchPanel" style="display:none;">
       <div class="mut" style="font-size:12px; margin-bottom:8px">🛒 物販追加</div>
       <select id="productSel" style="margin-bottom:8px"></select>
-      <div class="row"><input id="qty" type="number" value="1" min="1" style="width:70px; text-align:center"><button class="primary" id="btnAdd">追加</button></div>
+      <div class="row">
+        <input id="qty" type="number" value="1" min="1" style="width:70px; text-align:center">
+        <button class="primary" id="btnAdd">追加</button>
+      </div>
     </div>
   </div>
 
-  <div id="qrModal"><video id="qrVideo" playsinline muted autoplay></video><button id="qrClose">キャンセル</button></div>
+  <div id="qrModal">
+    <video id="qrVideo" playsinline muted autoplay></video>
+    <button id="qrClose">キャンセル</button>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script>
+    // ⚠️ デプロイURLを最新のものに置き換えてください
     const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzRmjE5pwfnK88EICyzJQhRrJcxnSgdmcze0s7J9w6_msIlwVhe7b5C7V38gV88jHaNWQ/exec";
     const TOKEN = "MIKOSHIYA_2026";
     const el = { 
       today: q("#today"), stateText: q("#stateText"), idText: q("#idText"), 
-      settleTotal: q("#settleTotal"), status: q("#status"), 
+      settleTotal: q("#settleTotal"), feeBreakdown: q("#feeBreakdown"), status: q("#status"), 
       btnScan: q("#btnScan"), btnEnter: q("#btnEnter"), btnSettle: q("#btnSettle"), 
-      productSel: q("#productSel"), qty: q("#qty"), btnAdd: q("#btnAdd"), 
+      productSel: q("#productSel"), qty: q("#qty"), btnAdd: q("#btnAdd"), merchPanel: q("#merchPanel"),
       qrModal: q("#qrModal"), qrClose: q("#qrClose"), qrVideo: q("#qrVideo"),
       parkingPanel: q("#parkingPanel"), spotButtons: q("#spotButtons")
     };
@@ -110,11 +127,21 @@
       el.stateText.textContent = st.is_inside ? "● 入室中" : "○ 退室済";
       el.stateText.style.color = st.is_inside ? "#28d17c" : "#aab6d3";
       el.idText.textContent = st.member_id;
-      el.settleTotal.textContent = Number(st.stay_yen || 0) + Number(st.merch_yen || 0);
+      
+      // 金額計算と内訳表示の更新 (J列:合計, I列:席代, F列:物販 の想定)
+      const stayYen = Number(st.stay_yen || 0);
+      const merchYen = Number(st.merch_yen || 0);
+      const totalYen = Number(st.total_yen || (stayYen + merchYen)); // GASから合計が来なければ自前で足す
+      
+      el.settleTotal.textContent = totalYen.toLocaleString();
+      el.feeBreakdown.textContent = `席代: ${stayYen.toLocaleString()}円 / 物販: ${merchYen.toLocaleString()}円`;
       
       el.btnEnter.disabled = !!st.is_inside;
       el.btnSettle.disabled = !st.is_inside;
-      el.parkingPanel.style.display = st.is_inside ? "none" : "block"; // 入室中なら選ばせない
+      
+      // UIの出し分け
+      el.parkingPanel.style.display = st.is_inside ? "none" : "block"; // 入室中なら駐車場は選ばせない
+      el.merchPanel.style.display = st.is_inside ? "block" : "none"; // 退室済みなら物販パネルを隠す
       
       setStatus("待機中");
     }
@@ -131,7 +158,9 @@
         
         btn.onclick = () => {
           selectedSpot = (selectedSpot === spot) ? "" : spot;
-          renderParkingButtons();
+          // UIを再描画
+          Array.from(el.spotButtons.children).forEach(b => b.classList.remove("selected"));
+          if(selectedSpot) btn.classList.add("selected");
         };
         el.spotButtons.appendChild(btn);
       });
@@ -160,7 +189,7 @@
 
     el.qrClose.addEventListener("click", () => { el.qrModal.style.display = "none"; if (el.qrVideo.srcObject) el.qrVideo.srcObject.getTracks().forEach(t => t.stop()); });
 
-    // 🚗 入室時に spot_no を送るように変更
+    // 🚗 入室処理
     el.btnEnter.addEventListener("click", async () => { 
       setStatus("入室中..."); 
       const r = await api("enter", { member_id: memberId, spot_no: selectedSpot }); 
@@ -169,13 +198,16 @@
       refresh(); 
     });
 
+    // 💰 退室処理
     el.btnSettle.addEventListener("click", async () => {
       if(settling) return; settling = true; setStatus("精算中...");
       const r = await api("settleAndExit", { member_id: memberId });
       setStatus(r.message, !r.ok);
-      setTimeout(() => { settling = false; memberId = ""; refresh(); }, 1200);
+      // 精算後はリセットせず、結果を表示したままにする（確認用）
+      setTimeout(() => { settling = false; refresh(); }, 1500);
     });
 
+    // 🛒 物販追加
     el.btnAdd.addEventListener("click", async () => {
       if (!memberId) return setStatus("QRをスキャンしてね", true);
       setStatus("物販追加中...");
@@ -183,11 +215,13 @@
       setStatus(r.message, !r.ok); refresh();
     });
 
+    // 起動時の初期化
     (async function init(){
+      setStatus("システム起動中...");
       const res = await api("getInitial"); 
       if(res.ok) {
         el.today.textContent = res.today;
-        parkingList = res.parking_list || []; // ②,③,⑮,㉑,㉒ を取得
+        parkingList = res.parking_list || []; 
         occupiedSpots = res.occupied_spots || [];
         renderParkingButtons();
       }
